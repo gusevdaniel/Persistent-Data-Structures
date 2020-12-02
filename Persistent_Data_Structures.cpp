@@ -3,29 +3,32 @@
 #include <vector>
 using namespace std;
 
+//структура хранение версий. т.е. тип данных узла
 template <typename T>
-struct Vers //структура хранение версий. т.е. тип данных узла
+struct Vers 
 {
 public:
 	T value;
 	int version = 0;
 };
 
+//класс персистентный массив
 template <typename T>
-class PerMass  //класс персистентный массив 
+class PerMass   
 {
 public:
-	PerMass(int n);
-	void inPutElement(int i, T value);
-	T outPutElement(int i);
-	T outPutElement(int i, int version);
+	PerMass(int n);							//конструктор с одним параметром
+	void inPutElement(int i, T value);		//ввод элемента
+	T outPutElement(int i);					//вывод элемента последней версии 
+	T outPutElement(int i, int version);	//вывод элемента выбранной версии 
 private:
-	int version; //актуальная версия структуры
-	int SizePerMass; //размер массива
-	vector <vector <Vers<T>>> vectorPerMass; //хранение данных. внутренний вектр это толстый узел
+	int version;							//актуальная версия структуры
+	int SizePerMass;						//размер массива
+	vector <vector <Vers<T>>> vectorPerMass;//хранение данных. внутренний вектр это толстый узел
 };
 
-template <typename T>//конструктор с одним параметром
+//конструктор с одним параметром
+template <typename T>
 PerMass<T>::PerMass(int n)
 {
 	version = 0;
@@ -38,8 +41,9 @@ PerMass<T>::PerMass(int n)
 	}
 }
 
+//ввод элемента
 template <typename T>
-void PerMass<T>::inPutElement(int i, T value)//ввод элемента
+void PerMass<T>::inPutElement(int i, T value)
 {
 	Vers<T> box;
 	version++;
@@ -48,8 +52,9 @@ void PerMass<T>::inPutElement(int i, T value)//ввод элемента
 	vectorPerMass[i].push_back(box);
 }
 
+//вывод элемента последней версии 
 template <typename T>
-T PerMass<T>::outPutElement(int i)//вывод элемента последней версии 
+T PerMass<T>::outPutElement(int i)
 {
 	
 	Vers<T> box;
@@ -58,7 +63,7 @@ T PerMass<T>::outPutElement(int i)//вывод элемента последне
 
 }
 
-//вывод элемента последней версии 
+//вывод элемента выбранной версии 
 template <typename T>
 T PerMass<T>::outPutElement(int i, int inVersion)
 {
