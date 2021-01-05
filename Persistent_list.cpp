@@ -182,6 +182,7 @@ void persistentList<T>::erase(const int i)
 	}
 	act box;
 	box.past_version = version;
+	box.past_elem = *iter_b;
 	box.index_elem = i;
 	box.kind_act = 7;
 	version++;
@@ -242,82 +243,92 @@ typename persistentList<T>::act persistentList<T>::swap_data_part_undu(act box, 
 template<class T>
 void persistentList<T>::undo()
 {
-	int i = vector_act.size()-1;
-	act box = vector_act[i];
-
+	act box = vector_act.back();
+	vector_act.pop_back();
 	//определение вида действия
 	switch (box.kind_act)
 	{
 		case 1: {//set
-			vector_act.erase(vector_act.begin() + i);
-			act box_undo = swap_data_part_undu(box, 1);
-			vector_undo.push_back(box_undo);
-
 			iter_b = list_data.begin();
 			for (int j = 0; j < box.index_elem; j++, iter_b++)
 			{
 			}
 			*iter_b = box.past_elem;
+
+			act box_undo = swap_data_part_undu(box, 1);
+			vector_undo.push_back(box_undo);
 			break;
 		}
 		case 2:{//push_back
-			vector_act.erase(vector_act.begin() + i);
+			list_data.pop_back();
 			size--;
+
 			act box_undo = swap_data_part_undu(box, 1);
 			vector_undo.push_back(box_undo);
-			list_data.pop_back();
 			break;
 		}
 		case 3: {//push_front
-			vector_act.erase(vector_act.begin() + i);
+			list_data.pop_front();
 			size--;
+
 			act box_undo = swap_data_part_undu(box, 1);
 			vector_undo.push_back(box_undo);
-			list_data.pop_front();
 			break;
 		}
 		case 4: {//pop_back
-			vector_act.erase(vector_act.begin() + i);
+			list_data.push_back(box.past_elem);
 			size++;
+
 			act box_undo = swap_data_part_undu(box, 1);
 			vector_undo.push_back(box_undo);
-			list_data.push_back(box.past_elem);
 			break;
 		}
 		case 5: {//pop_front
-			vector_act.erase(vector_act.begin() + i);
+			list_data.push_front(box.past_elem);
 			size++;
+
 			act box_undo = swap_data_part_undu(box, 1);
 			vector_undo.push_back(box_undo);
-			list_data.push_front(box.past_elem);
 			break;
 		}
 		case 6: {//insert
-			vector_act.erase(vector_act.begin() + i);
-			size--;
-			act box_undo = swap_data_part_undu(box, 1);
-			vector_undo.push_back(box_undo);
 			iter_b = list_data.begin();
 			for (int j = 0; j < box.index_elem; j++, iter_b++)
 			{
 			}
 			list_data.erase(iter_b);
+			size--;
+
+			act box_undo = swap_data_part_undu(box, 1);
+			vector_undo.push_back(box_undo);
 			break;
 		}
-		case 8: {
-			vector_act.erase(vector_act.begin() + i);
+		case 7: {//erase
+			iter_b = list_data.begin();
+			for (int j = 0; j < box.index_elem; j++, iter_b++)
+			{
+			}
+			list_data.insert(iter_b, box.past_elem);
+			size++;
 
+			act box_undo = swap_data_part_undu(box, 1);
+			vector_undo.push_back(box_undo);
+			break;
+		}
+		case 8: {//clear
 			act box_undo;
+
 			box_undo.past_version = use_version;
-			use_version = box.past_version;
 			box_undo.version = use_version;
-
-			list_data = box.list_data;
-			size = list_data.size();
-
 			box_undo.list_data = box.list_data;
 			box_undo.kind_act = box.kind_act;
 			box_undo.undo = 1;
+			vector_undo.push_back(box_undo);
+
+			use_version = box.past_version;
+			list_data = box.list_data;
+			size = list_data.size();
+			break;
 		}
 	default:
 		break;
@@ -334,18 +345,20 @@ void persistentList<T>::redo()
 	switch (box.kind_act)
 	{
 	case 1: {//set
-		act box_redo = swap_data_part_undu(box, 0);
-		vector_act.push_back(box_redo);
 		iter_b = list_data.begin();
 		for (int j = 0; j < box.index_elem; j++, iter_b++)
 		{
 		}
 		*iter_b = box.past_elem;
+
+		act box_redo = swap_data_part_undu(box, 0);
+		vector_act.push_back(box_redo);
 		break;
 	}
 	case 2: {//push_back
 		list_data.push_back(box.past_elem);
 		size++;
+
 		act box_redo = swap_data_part_undu(box, 0);
 		vector_act.push_back(box_redo);
 		break;
@@ -353,6 +366,7 @@ void persistentList<T>::redo()
 	case 3: {//push_front
 		list_data.push_front(box.past_elem);
 		size++;
+
 		act box_redo = swap_data_part_undu(box, 0);
 		vector_act.push_back(box_redo);
 		break;
@@ -360,6 +374,7 @@ void persistentList<T>::redo()
 	case 4: {//pop_back
 		list_data.pop_back();
 		size--;
+
 		act box_redo = swap_data_part_undu(box, 0);
 		vector_act.push_back(box_redo);
 		break;
@@ -367,30 +382,43 @@ void persistentList<T>::redo()
 	case 5: {//pop_front
 		list_data.pop_front();
 		size--;
+
 		act box_redo = swap_data_part_undu(box, 0);
 		vector_act.push_back(box_redo);
 		break;
 	}
 	case 6: {//insert
-		size++;
-		act box_redo = swap_data_part_undu(box, 0);
-		vector_act.push_back(box_redo);
 		iter_b = list_data.begin();
 		for (int j = 0; j < box.index_elem; j++, iter_b++)
 		{
 		}
 		list_data.insert(iter_b, box.past_elem);
+		size++;
+
+		act box_redo = swap_data_part_undu(box, 0);
+		vector_act.push_back(box_redo);
 		break;
 	}
-	case 8: {
-		act box_redo;
-		box_redo.past_version = use_version;
-		use_version = box.past_version;
-		box_redo.version = use_version;
+	case 7: {//erase
+		iter_b = list_data.begin();
+		for (int j = 0; j < box.index_elem; j++, iter_b++)
+		{
+		}
+		list_data.erase(iter_b);
+		size--;
 
+		act box_redo = swap_data_part_undu(box, 0);
+		vector_act.push_back(box_redo);
+		break;
+	}
+	case 8: {//clear
+		use_version = box.past_version;
 		list_data.clear();
 		size = 0;
 
+		act box_redo;
+		box_redo.past_version = use_version;
+		box_redo.version = use_version;
 		box_redo.list_data = box.list_data;
 		box_redo.undo = 0;
 	}
@@ -408,7 +436,13 @@ int main()
 	L.insert(0,1);
 	L.insert(1,2);
 	L.insert(2,3);
+	L.push_back(4);
+	L.push_back(5);
 	
+	L.erase(2);
+	L.undo();
+	L.redo();
+
 	M.push_back(L);
 	L.clear();
 	L.undo();
