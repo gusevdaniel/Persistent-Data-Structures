@@ -18,7 +18,7 @@ public:
 	void clear();
 
 	int get_size();
-	const T& get(int num);
+	const T& get(int i);
 	void undo();
 	void redo();
 private:
@@ -110,6 +110,7 @@ void persistentList<T>::push_back(const T& value)
 	vector_act.push_back(box);
 	list_data.push_back(value);
 	iter_b = list_data.begin();
+	iter = 0;
 }
 
 template<class T>
@@ -128,6 +129,7 @@ void persistentList<T>::push_front(const T& value)
 	vector_act.push_back(box);
 	list_data.push_front(value);
 	iter_b = list_data.begin();
+	iter = 0;
 }
 
 template<class T>
@@ -145,7 +147,6 @@ void persistentList<T>::pop_back()
 	box.undo = 0;
 	vector_act.push_back(box);
 	list_data.pop_back();
-	iter_b = list_data.begin();
 }
 
 template<class T>
@@ -163,15 +164,18 @@ void persistentList<T>::pop_front()
 	vector_act.push_back(box);
 	list_data.pop_front();
 	iter_b = list_data.begin();
+	iter = 0;
 }
 
 template<class T>
 void persistentList<T>::insert(const int i, const T& value)
 {
 	iter_b = list_data.begin();
+	iter = 0;
 	for (int j = 0; j < i; j++, iter_b++)
 	{
 	}
+
 	act box;
 	box.past_version = version;
 	box.present_elem = value;
@@ -184,7 +188,6 @@ void persistentList<T>::insert(const int i, const T& value)
 	box.undo = 0;
 	vector_act.push_back(box);
 	list_data.insert(iter_b , value);
-	iter_b = list_data.begin();
 }
 
 template<class T>
@@ -207,6 +210,7 @@ void persistentList<T>::erase(const int i)
 	vector_act.push_back(box);
 	list_data.erase(iter_b);
 	iter_b = list_data.begin();
+	iter = 0;
 }
 
 template<class T>
@@ -224,7 +228,6 @@ void persistentList<T>::clear()
 	box.list_data = list_data;
 	vector_act.push_back(box);
 	list_data.clear();
-	iter_b = list_data.begin();
 }
 
 
@@ -236,13 +239,11 @@ int persistentList<T>::get_size()
 }
 
 template<class T>
-const T& persistentList<T>::get(int num) {
-	if (num < 0 || num >= size) {
-		exit(1);
-	}
+const T& persistentList<T>::get(int i) {
 	typename list<T>::iterator it;
 	it = list_data.begin();
-	for (int i=0; i<num;i++, it++)
+	iter = 0;
+	for (int j=0; j<i;j++, it++)
 	{
 	}
 	return *it;
@@ -273,9 +274,15 @@ void persistentList<T>::undo()
 	switch (box.kind_act)
 	{
 		case 1: {//set
-			iter_b = list_data.begin();
-			for (int j = 0; j < box.index_elem; j++, iter_b++)
-			{
+			
+			while (iter < box.index_elem) {
+				iter++;
+				iter_b++;
+			}
+
+			while (iter > box.index_elem) {
+				iter--;
+				iter_b--;
 			}
 			*iter_b = box.past_elem;
 
@@ -297,6 +304,8 @@ void persistentList<T>::undo()
 
 			act box_undo = swap_data_part_undu(box, 1);
 			vector_undo.push_back(box_undo);
+			iter_b = list_data.begin();
+			iter = 0;
 			break;
 		}
 		case 4: {//pop_back
@@ -313,10 +322,13 @@ void persistentList<T>::undo()
 
 			act box_undo = swap_data_part_undu(box, 1);
 			vector_undo.push_back(box_undo);
+			iter_b = list_data.begin();
+			iter = 0;
 			break;
 		}
 		case 6: {//insert
 			iter_b = list_data.begin();
+			iter = 0;
 			for (int j = 0; j < box.index_elem; j++, iter_b++)
 			{
 			}
@@ -329,6 +341,7 @@ void persistentList<T>::undo()
 		}
 		case 7: {//erase
 			iter_b = list_data.begin();
+			iter = 0;
 			for (int j = 0; j < box.index_elem; j++, iter_b++)
 			{
 			}
