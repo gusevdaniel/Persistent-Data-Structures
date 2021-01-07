@@ -4,6 +4,7 @@
 using namespace std;
 
 
+
 template<class T>
 class persistentMass {
 public:
@@ -29,12 +30,12 @@ private:
 	*/
 	class act {
 	public:
-		T past_elem;		//предыдущее значение элемента
-		T present_elem;		//нынешнее значение
-		int index_elem;		//индекс измененного элемента
-		int kind_act;		//вид изменения 1-set 
+		T past_elem;		//РїСЂРµРґС‹РґСѓС‰РµРµ Р·РЅР°С‡РµРЅРёРµ СЌР»РµРјРµРЅС‚Р°
+		T present_elem;		//РЅС‹РЅРµС€РЅРµРµ Р·РЅР°С‡РµРЅРёРµ
+		int index_elem;		//РёРЅРґРµРєСЃ РёР·РјРµРЅРµРЅРЅРѕРіРѕ СЌР»РµРјРµРЅС‚Р°
+		int kind_act;		//РІРёРґ РёР·РјРµРЅРµРЅРёСЏ 1-set 
 		int past_version;
-		int version;		//версия которую создают
+		int version;		//РІРµСЂСЃРёСЏ РєРѕС‚РѕСЂСѓСЋ СЃРѕР·РґР°СЋС‚
 		bool undo;
 		vector<T> vector_data;
 	};
@@ -217,7 +218,7 @@ void persistentMass<T>::undo()
 {
 	act box = vector_act.back();
 	vector_act.pop_back();
-	//определение вида действия
+	//РѕРїСЂРµРґРµР»РµРЅРёРµ РІРёРґР° РґРµР№СЃС‚РІРёСЏ
 	switch (box.kind_act)
 	{
 	case 1: {//set
@@ -295,7 +296,7 @@ void persistentMass<T>::redo()
 {
 	act box = vector_undo.back();
 	vector_undo.pop_back();
-	//определение вида действия
+	//РѕРїСЂРµРґРµР»РµРЅРёРµ РІРёРґР° РґРµР№СЃС‚РІРёСЏ
 	switch (box.kind_act)
 	{
 	case 1: {//set
@@ -396,12 +397,12 @@ private:
 	*/
 	class act {
 	public:
-		T past_elem;		//предыдущее значение элемента
-		T present_elem;		//нынешнее значение
-		int index_elem;		//индекс измененного элемента
-		int kind_act;		//вид изменения 1-set 
+		T past_elem;		//РїСЂРµРґС‹РґСѓС‰РµРµ Р·РЅР°С‡РµРЅРёРµ СЌР»РµРјРµРЅС‚Р°
+		T present_elem;		//РЅС‹РЅРµС€РЅРµРµ Р·РЅР°С‡РµРЅРёРµ
+		int index_elem;		//РёРЅРґРµРєСЃ РёР·РјРµРЅРµРЅРЅРѕРіРѕ СЌР»РµРјРµРЅС‚Р°
+		int kind_act;		//РІРёРґ РёР·РјРµРЅРµРЅРёСЏ 1-set 
 		int past_version;
-		int version;		//версия которую создают
+		int version;		//РІРµСЂСЃРёСЏ РєРѕС‚РѕСЂСѓСЋ СЃРѕР·РґР°СЋС‚
 		bool undo;
 		list<T> list_data;
 	};
@@ -638,7 +639,7 @@ void persistentList<T>::undo()
 {
 	act box = vector_act.back();
 	vector_act.pop_back();
-	//определение вида действия
+	//РѕРїСЂРµРґРµР»РµРЅРёРµ РІРёРґР° РґРµР№СЃС‚РІРёСЏ
 	switch (box.kind_act)
 	{
 	case 1: {//set
@@ -745,7 +746,7 @@ void persistentList<T>::redo()
 {
 	act box = vector_undo.back();
 	vector_undo.pop_back();
-	//определение вида действия
+	//РѕРїСЂРµРґРµР»РµРЅРёРµ РІРёРґР° РґРµР№СЃС‚РІРёСЏ
 	switch (box.kind_act)
 	{
 	case 1: {//set
