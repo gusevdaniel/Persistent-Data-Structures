@@ -1,5 +1,4 @@
-﻿
-#include <iostream>
+﻿#include <iostream>
 #include <vector>
 using namespace std;
 
@@ -25,17 +24,17 @@ public:
 	T get(int i);								//вывод элемента последней версии 
 	T get(int i, int version);					//вывод элемента выбранной версии 
 	int getSize();								//получить размер массива
-	void add(T value);							//добавить элемент в массив
+	void push_back(T value);					//добавить элемент в массив
+	void pop_back();							//добавить элемент в массив
 	void empty();								//опустошить массив
 	T& operator[](const int i);					//перегрузка оператора[]	
 	
 protected:
 	int version;								//последняя версия структуры, счетчик
-	int useVersion;								//используемая версия (для undo/redo)
-	bool inItSelf;								//вложенный сам в себя
 
-	int maxSize;								//максимальный размер массива
-	int SizePersistMass;						//размер массива этой версии 
+	int maxSize;								//максимальный размер массива (для реализации функций которые манипулируют размером массива)
+	int SizePersistMass;							//размер массива этой версии 
+	vector<int> vectroSizePersistMass;			//размер массива всех версий
 	vector <vector <FatNodes_elem>> vectorFatNode;//хранение данных. внутренний вектр это толстый узел
 };
 
@@ -44,9 +43,9 @@ template <class T>
 PersistMass<T>::PersistMass()
 {
 	version = 0;
-	useVersion = 0;
-
 	SizePersistMass = 0;
+	vectroSizePersistMass.push_back(SizePersistMass);
+	maxSize = 0;
 	vectorFatNode.resize(0);
 	//vectorFatNode;
 }
@@ -62,19 +61,18 @@ template <class T>
 PersistMass<T>::PersistMass(int n)
 {
 	version = 0;
-	useVersion = 0;
 	SizePersistMass = n;
+	vectroSizePersistMass.push_back(n);
+	maxSize = n;
 	vectorFatNode.resize(n);
 
 	if (typeid(T) == typeid(PersistMass<int>)) {
-		inItSelf = true;
 		FatNodes_elem box;
 		for (int i = 0; i < n; i++) {
 			vectorFatNode[i].push_back(box);
 		}
 	}
 	else {
-		inItSelf = false;
 		FatNodes_elem box;
 		for (int i = 0; i < n; i++) {
 			box.version = 0;
@@ -88,16 +86,15 @@ PersistMass<T>::PersistMass(int n)
 template <class T>
 void PersistMass<T>::set(int i, T value)
 {
+
 	if (i < 0 || i >= SizePersistMass)
 		exit(1);
 	version++;
-
-	FatNodes_elem box;
 	//расширяем узел новым значением
+	FatNodes_elem box;
 	box.value = value;
 	box.version = version;
 
-	useVersion = version;
 	vectorFatNode[i].push_back(box);
 }
 
@@ -107,20 +104,16 @@ T PersistMass<T>::get(int i)
 {
 	if (i < 0 || i >= SizePersistMass)
 		exit(1);
-	if (useVersion == version) {
-		return vectorFatNode[i].back().value;
-	}
-	else {
-		return get(i, useVersion);
-	}
+	return vectorFatNode[i].back().value;
+
 }
 
 //вывод элемента выбранной версии 
 template <class T>
 T PersistMass<T>::get(int i, int inVersion)
 {
-	if (i < 0 || i >= SizePersistMass)
-		exit(1);
+
+	
 	//версия не может быть маньше 0
 	if (inVersion < 0) {
 		exit(1);
@@ -129,6 +122,8 @@ T PersistMass<T>::get(int i, int inVersion)
 	if (inVersion > version) {
 		exit(1);
 	}
+	if (i < 0 || i >= vectroSizePersistMass[inVersion])
+		exit(1);
 
 	int size = vectorFatNode[i].size() - 1;
 	//как только inVersion больше чем 
@@ -154,56 +149,100 @@ T& PersistMass<T>::operator[](const int i)
 	return vectorFatNode[i].back().value;
 }
 
+
 template <class T>
-void PersistMass<T>::add(T value) 
+void PersistMass<T>::push_back(T value) 
 {
+	if (SizePersistMass == maxSize) {//проверка на размер массива (было ли последним изменением - удаление)
+		SizePersistMass++;
+		vectroSizePersistMass.push_back(SizePersistMass);
+		maxSize++;
+		version++;
+		FatNodes_elem box;
+		vector <FatNodes_elem> vect_box;
+		box.version = version;
+		box.value = value;
+		vect_box.push_back(box);
+		vectorFatNode.push_back(vect_box);
+	}
+	else {
+		version++;
+		//расширяем узел новым значением
+		FatNodes_elem box;
+		box.value = value;
+		box.version = version;
+		vectorFatNode[SizePersistMass].push_back(box);
+		SizePersistMass++;
+		vectroSizePersistMass.push_back(SizePersistMass);
+	}
 	
-	SizePersistMass++;
+}
+
+template<class T>
+void PersistMass<T>::pop_back()
+{
+	SizePersistMass--;
 	version++;
-	useVersion = version;
-	FatNodes_elem box;
-	vector <FatNodes_elem> vect_box;
-	box.version = version;
-	box.value = value;
-	vect_box.push_back(box);
-	vectorFatNode.insert(vectorFatNode.begin(),vect_box);
+	vectroSizePersistMass.push_back(SizePersistMass);
 }
 
 template<class T>
 void PersistMass<T>::empty()
 {
-	this->SizePersistMass = 0;
+	SizePersistMass = 0;
+	version++;
+	vectroSizePersistMass.push_back(SizePersistMass);
 }
 
-////перегрузка оператора = элемента
-//template <class T>
-//FatNodes_elem<T>& PersistMass<T>::operator=FatNodes_elem<T>(const T& elem) {
-//
-//	return elem.version;
-//}
+
 
 int main()
 {
 
-	PersistMass<int> mass1(2);//выделение памяти
-	mass1.add(2);
-	mass1.set(2, 3);
-	mass1.empty();
-	mass1.add(3);
-	//PersistMass<int> mass(mass1);//выделение памяти
+	PersistMass<int> mass1;//выделение памяти
+	mass1.push_back(1);
+	mass1.push_back(2);
+	mass1.push_back(3);
+
+	mass1.set(0, 10);
+	mass1.set(1, 20);
+	mass1.set(2, 30);
+
+	cout << "version 0" << endl;
+	cout <<"size: "<< mass1.getSize()<<"\n" << endl;
+
+	cout << "version 1" << endl;
+	cout << "size: " << mass1.getSize() << endl;
+	cout <<"1 elem: "<< mass1.get(0, 1) << "\n" << endl;
+
+	cout << "version 2" << endl;
+	cout << "size: " << mass1.getSize() << endl;
+	cout << "1 elem: " << mass1.get(0, 2) << endl;
+	cout << "2 elem: " << mass1.get(1, 2) << "\n" << endl;
+	
+	cout << "version 3" << endl;
+	cout << "size: " << mass1.getSize() << endl;
+	cout << "1 elem: " << mass1.get(0, 3) << endl;
+	cout << "2 elem: " << mass1.get(1, 3) << endl;
+	cout << "3 elem: " << mass1.get(2, 3) << "\n" << endl;
+
+	cout << "last version" << endl;
+	cout << "1 elem: " << mass1.get(0) << endl;
+	cout << "2 elem: " << mass1.get(1) << endl;
+	cout << "3 elem: " << mass1.get(2) << "\n" << endl;
 
 	//PersistMass <PersistMass<int>> mass2(2);//выделение памяти
 	//mass2.set(0, mass1);
 
-	/*cout << "used 'set' :" << endl;
-	cout << "output elemrnt 0 : " << mass1[0] << endl;
-	cout << "output elemrnt 1 : " << mass1.get(1) << endl;
-	cout << "===========================" << endl;
-	 
-	mass1.set(0, 1);
-	cout << "output elemrnt 0 : " << mass1[0] << endl;
-	cout << "output elemrnt 1 : " << mass1.get(1) << endl;
-	cout << "===========================" << endl;*/
+	//cout << "used 'set' :" << endl;
+	//cout << "output elemrnt 0 : " << mass1[0] << endl;
+	//cout << "output elemrnt 1 : " << mass1.get(1) << endl;
+	//cout << "===========================" << endl;
+	// 
+	//mass1.set(0, 1);
+	//cout << "output elemrnt 0 : " << mass1[0] << endl;
+	//cout << "output elemrnt 1 : " << mass1.get(1) << endl;
+	//cout << "===========================" << endl;
 	//mass1.set(1, 2);
 	//cout << "output elemrnt 0 : " << mass1[0] << endl;
 	//cout << "output elemrnt 1 : " << mass1.get(1) << endl;
