@@ -1,4 +1,4 @@
-
+#include "pch.h"
 #include "CppUnitTest.h"
 #include "..\Persistent_list\Persistent_list.cpp"
 
